@@ -642,3 +642,25 @@ void Sys_AnsiColorPrint( const char *msg )
 		fputs( buffer, stderr );
 	}
 }
+
+void *Static_LoadObject(const char *path)
+{
+	fprintf(stderr, "Static_LoadObject(%s) not supported\n", path);
+	return nullptr;
+}
+
+void Static_UnloadObject(void *)
+{
+	fprintf(stderr, "Static_UnloadObject not supported\n");
+}
+
+void *Static_LoadFunction(void *h, const char *f)
+{
+	fprintf(stderr, "Static_LoadFunction(%p, %s) not supported\n", h, f);
+	return nullptr;
+}
+
+const char *Static_GetError()
+{
+	return "Static_GetError() not supported\n";
+}
