@@ -37,6 +37,9 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #endif
 #include <minizip/unzip.h>
 
+#include <string>
+#include <sys/stat.h>
+
 // for rmdir
 #if defined (_MSC_VER)
 	#include <direct.h>
@@ -1851,6 +1854,94 @@ ZIP FILE LOADING
 ==========================================================================
 */
 
+/* For GK, we introduce cached hashtables.  These are stored alongside the .pk3 file and
+	automatically created if they do not exist.
+
+	Format:
+		str: pakPathname,
+		str: pakFilename,
+		str: pakBasename,
+		str: pakGamename,
+		(ignore handle - populated above)
+		uint32_t: checksum,
+		uint32_t: numfiles,
+		uint32_t: hashSize,
+
+		then the hashtable, repeated until EOF:
+			uint32_t: hash_entry_count
+			str: name
+			uint32_t: pos
+			uint32_t: len
+
+	Strings are formatted as:
+		uint32_t nchar
+		non-null terminated string
+		align_up(4)
+
+	Utility functions below:
+*/
+
+static std::pair<uint32_t, bool> hash_read_uint32(FILE *fp)
+{
+	uint32_t ret;
+	auto fr = fread(&ret, 1, 4, fp);
+	if(fr != 4)
+		return std::make_pair(0, false);
+	else
+		return std::make_pair(ret, true);
+}
+
+bool hash_write_uint32(FILE *fp, uint32_t v)
+{
+	auto fw = fwrite(&v, 1, 4, fp);
+	if(fw != 4)
+		return false;
+	else
+		return true;
+}
+
+static std::pair<std::string, bool> hash_read_string(FILE *fp)
+{
+	uint32_t len;
+	bool success;
+
+	std::tie(len, success) = hash_read_uint32(fp);
+	if(!success)
+		return std::make_pair("", false);
+	
+	auto align_size = (len + 3) & ~3U;
+	auto buf = malloc(align_size);
+	if(!buf)
+		return std::make_pair("", false);
+
+	auto fr = fread(buf, 1, align_size, fp);
+	if(fr != align_size)
+		return std::make_pair("", false);
+	
+	std::string ret((const char *)buf, len);
+	free(buf);
+	return std::make_pair(ret, true);
+}
+
+static bool hash_write_string(FILE *fp, const std::string s)
+{
+	auto align_size = (s.length() + 3) & ~3U;
+	if(!hash_write_uint32(fp, (uint32_t)s.length()))
+		return false;
+	auto fw = fwrite(s.c_str(), 1, s.length(), fp);
+	if(fw != s.length())
+		return false;
+	if(s.length() != align_size)
+	{
+		uint32_t zero = 0;
+		auto zero_len = align_size - s.length();
+		fw = fwrite(&zero, 1, zero_len, fp);
+		if(fw != zero_len)
+			return false;
+	}
+	return true;
+}
+
 /*
 =================
 FS_LoadZipFile
@@ -1882,6 +1973,152 @@ static pack_t *FS_LoadZipFile( const char *zipfile, const char *basename )
 
 	if (err != UNZ_OK)
 		return NULL;
+
+	std::string hashfile = std::string(zipfile) + ".hash";
+	struct stat st_hash;
+	if(stat(hashfile.c_str(), &st_hash) == 0 && S_ISREG(st_hash.st_mode))
+	{
+		fprintf(stderr, "hash file found\n");
+		
+		auto hf = fopen(hashfile.c_str(), "rb");
+		if(hf)
+		{
+			bool success;
+			std::string hash_pakPathname, hash_pakFilename, hash_pakBasename, hash_pakGamename;
+			uint32_t hash_checksum, hash_numfiles, hash_hashSize;
+			std::string hashentry_name;
+			uint32_t hash_entry_count, hashentry_pos, hashentry_len;
+			fileInPack_t *chash;
+
+			std::tie(hash_pakPathname, success) = hash_read_string(hf);
+			if(!success)
+			{
+				fprintf(stderr, "hash_pakPathname fail\n");
+				goto hash_read_fail;
+			}
+			std::tie(hash_pakFilename, success) = hash_read_string(hf);
+			if(!success)
+			{
+				fprintf(stderr, "hash_pakFilename fail\n");
+				goto hash_read_fail;
+			}
+			std::tie(hash_pakBasename, success) = hash_read_string(hf);
+			if(!success)
+			{
+				fprintf(stderr, "hash_pakBasename fail\n");
+				goto hash_read_fail;
+			}
+			std::tie(hash_pakGamename, success) = hash_read_string(hf);
+			if(!success)
+			{
+				fprintf(stderr, "hash_pakGamename fail\n");
+				goto hash_read_fail;
+			}
+			std::tie(hash_checksum, success) = hash_read_uint32(hf);
+			if(!success)
+			{
+				fprintf(stderr, "hash_checksum fail\n");
+				goto hash_read_fail;
+			}
+			std::tie(hash_numfiles, success) = hash_read_uint32(hf);
+			if(!success)
+			{
+				fprintf(stderr, "hash_numfiles fail\n");
+				goto hash_read_fail;
+			}
+			std::tie(hash_hashSize, success) = hash_read_uint32(hf);
+			if(!success)
+			{
+				fprintf(stderr, "hash_hashSize fail\n");
+				goto hash_read_fail;
+			}
+
+			pack = (pack_t *)Z_Malloc( sizeof( pack_t ) + hash_hashSize * sizeof(fileInPack_t *), TAG_FILESYS, qtrue );
+			pack->hashTable = (fileInPack_t **) (((char *) pack) + sizeof( pack_t ));
+
+			Q_strncpyz(pack->pakPathname, hash_pakPathname.c_str(), sizeof(pack->pakPathname));
+			Q_strncpyz(pack->pakFilename, hash_pakFilename.c_str(), sizeof(pack->pakFilename));
+			Q_strncpyz(pack->pakBasename, hash_pakBasename.c_str(), sizeof(pack->pakBasename));
+			Q_strncpyz(pack->pakGamename, hash_pakGamename.c_str(), sizeof(pack->pakGamename));
+			pack->handle = uf;
+			pack->checksum = hash_checksum;
+			pack->numfiles = hash_numfiles;
+			pack->hashSize = hash_hashSize;
+
+			pack->buildBuffer = (fileInPack_t *)Z_Malloc(hash_numfiles * sizeof(fileInPack_t),
+						TAG_FILESYS);
+
+			chash = pack->buildBuffer;
+			
+			for(int i = 0; i < pack->hashSize; i++)
+			{
+				std::tie(hash_entry_count, success) = hash_read_uint32(hf);
+				if(!success)
+				{
+					fprintf(stderr, "hash_entry_count(%d) fail\n", i);
+					goto hash_read_fail;
+				}
+				
+				if(hash_entry_count)
+				{
+					pack->hashTable[i] = chash;
+
+					for(unsigned j = 0u; j < hash_entry_count; j++)
+					{
+						auto nhash = (j < (hash_entry_count - 1)) ? (chash + 1) : nullptr;
+						
+						std::tie(hashentry_name, success) = hash_read_string(hf);
+						if(!success)
+						{
+							fprintf(stderr, "hashentry_name(%d, %u) fail\n", i, j);
+							goto hash_read_fail;
+						}
+						std::tie(hashentry_pos, success) = hash_read_uint32(hf);
+						if(!success)
+						{
+							fprintf(stderr, "hashentry_pos(%d, %u) fail\n", i, j);
+							goto hash_read_fail;
+						}
+						std::tie(hashentry_len, success) = hash_read_uint32(hf);
+						if(!success)
+						{
+							fprintf(stderr, "hashentry_len(%d, %u) fail\n", i, j);
+							goto hash_read_fail;
+						}
+						
+						chash->name = (char *)Z_Malloc(hashentry_name.length() + 1, TAG_FILESYS);
+						if(!chash->name)
+						{
+							fprintf(stderr, "chash->name alloc(%d, %u) fail\n", i, j);
+							goto hash_read_fail;
+						}
+						Q_strncpyz(chash->name, hashentry_name.c_str(), hashentry_name.length() + 1);
+						chash->name[hashentry_name.length()] = 0;
+
+						chash->pos = hashentry_pos;
+						chash->len = hashentry_len;
+						chash->next = nhash;
+
+						chash++;
+					}
+				}
+			}
+
+			fprintf(stderr, "hash successfully loaded\n");
+			fclose(hf);
+			return pack;
+	
+			hash_read_fail:
+			(void)0;
+		}
+		else
+		{
+			fprintf(stderr, "failed to open hash file\n");
+		}
+		if(hf)
+			fclose(hf);
+		fprintf(stderr, "error reading hash file, proceeding to read main file instead\n");
+	}
 
 	len = 0;
 	unzGoToFirstFile(uf);
@@ -1954,6 +2191,67 @@ static pack_t *FS_LoadZipFile( const char *zipfile, const char *basename )
 	Z_Free(fs_headerLongs);
 
 	pack->buildBuffer = buildBuffer;
+
+	/* Save the hash file */
+	auto f = fopen(hashfile.c_str(), "wb");
+	if(!f)
+	{
+		fprintf(stderr, "could not open hash file for writing\n");
+		return pack;
+	}
+
+	/* Persist the contents.
+	*/
+
+	if(!hash_write_string(f, pack->pakPathname))
+		goto hash_write_fail;
+	if(!hash_write_string(f, pack->pakFilename))
+		goto hash_write_fail;
+	if(!hash_write_string(f, pack->pakBasename))
+		goto hash_write_fail;
+	if(!hash_write_string(f, pack->pakGamename))
+		goto hash_write_fail;
+	if(!hash_write_uint32(f, pack->checksum))
+		goto hash_write_fail;
+	if(!hash_write_uint32(f, pack->numfiles))
+		goto hash_write_fail;
+	if(!hash_write_uint32(f, pack->hashSize))
+		goto hash_write_fail;
+	for(auto i = 0; i < pack->hashSize; i++)
+	{
+		uint32_t hc = 0;
+		const auto *chash = pack->hashTable[i];
+		while(chash != nullptr)
+		{
+			hc++;
+			chash = chash->next;
+		}
+
+		if(!hash_write_uint32(f, hc))
+			goto hash_write_fail;
+		
+		chash = pack->hashTable[i];
+		while(chash != nullptr)
+		{
+			if(!hash_write_string(f, chash->name))
+				goto hash_write_fail;
+			if(!hash_write_uint32(f, (uint32_t)chash->pos))
+				goto hash_write_fail;
+			if(!hash_write_uint32(f, (uint32_t)chash->len))
+				goto hash_write_fail;
+			chash = chash->next;
+		}
+	}
+
+	fprintf(stderr, "hash file %s written successfully\n",
+		hashfile.c_str());
+	fclose(f);
+
+	return pack;
+
+hash_write_fail:
+	fclose(f);
+	fprintf(stderr, "hash write failed\n");
 	return pack;
 }
 
