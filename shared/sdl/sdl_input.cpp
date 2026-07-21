@@ -1103,15 +1103,39 @@ static void IN_JoyMove( void )
 			if (total > MAX_JOYSTICK_AXIS) total = MAX_JOYSTICK_AXIS;
 			for (i = 0; i < total; i++)
 			{
+				auto axis_id = i;
+				bool invert = false;
+#ifdef __GAMEKID__
+				switch(i)
+				{
+					case 0:
+						axis_id = AXIS_SIDE;
+						break;
+					case 1:
+						axis_id = AXIS_FORWARD;
+						invert = true;
+						break;
+					case 2:
+						axis_id = AXIS_YAW;
+						invert = true;
+						break;
+					case 3:
+						axis_id = AXIS_PITCH;
+						invert = true;
+						break;
+				}
+#endif
 				Sint16 axis = SDL_JoystickGetAxis(stick, i);
+				if(invert)
+					axis = -axis;
 				float f = ( (float) abs(axis) ) / 32767.0f;
 
 				if( f < in_joystickThreshold->value ) axis = 0;
 
-				if ( axis != stick_state.oldaaxes[i] )
+				if ( axis != stick_state.oldaaxes[axis_id] )
 				{
-					Sys_QueEvent( 0, SE_JOYSTICK_AXIS, i, axis, 0, NULL );
-					stick_state.oldaaxes[i] = axis;
+					Sys_QueEvent( 0, SE_JOYSTICK_AXIS, axis_id, axis / 256, 0, NULL );
+					stick_state.oldaaxes[axis_id] = axis;
 				}
 			}
 		}
