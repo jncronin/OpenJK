@@ -467,10 +467,15 @@ static void GLimp_InitExtensions( void )
 	{
 		if ( r_ext_multitexture->integer )
 		{
+#ifdef __GAMEKID__
+			qglMultiTexCoord2fARB = glMultiTexCoord2fARB;
+			qglMultiTexCoord2fARB = glMultiTexCoord2fARB;
+			qglClientActiveTextureARB = glClientActiveTextureARB;
+#else
 			qglMultiTexCoord2fARB = ( PFNGLMULTITEXCOORD2FARBPROC ) ri.GL_GetProcAddress( "glMultiTexCoord2fARB" );
 			qglActiveTextureARB = ( PFNGLACTIVETEXTUREARBPROC ) ri.GL_GetProcAddress( "glActiveTextureARB" );
 			qglClientActiveTextureARB = ( PFNGLCLIENTACTIVETEXTUREARBPROC ) ri.GL_GetProcAddress( "glClientActiveTextureARB" );
-
+#endif
 			if ( qglActiveTextureARB )
 			{
 				qglGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, &glConfig.maxActiveTextures );
@@ -506,11 +511,16 @@ static void GLimp_InitExtensions( void )
 		if ( r_ext_compiled_vertex_array->integer )
 		{
 			Com_Printf ("...using GL_EXT_compiled_vertex_array\n" );
+#ifdef __GAMEKID__
+			qglLockArraysEXT = glLockArraysEXT;
+			qglLockArraysEXT = glLockArraysEXT;
+#else
 			qglLockArraysEXT = ( PFNGLLOCKARRAYSEXTPROC ) ri.GL_GetProcAddress( "glLockArraysEXT" );
 			qglUnlockArraysEXT = ( PFNGLUNLOCKARRAYSEXTPROC ) ri.GL_GetProcAddress( "glUnlockArraysEXT" );
 			if (!qglLockArraysEXT || !qglUnlockArraysEXT) {
 				Com_Error (ERR_FATAL, "bad getprocaddress");
 			}
+#endif
 		}
 		else
 		{
@@ -524,6 +534,7 @@ static void GLimp_InitExtensions( void )
 
 	bool bNVRegisterCombiners = false;
 	// Register Combiners.
+#ifndef __GAMEKID__
 	if ( ri.GL_ExtensionSupported( "GL_NV_register_combiners" ) )
 	{
 		// NOTE: This extension requires multitexture support (over 2 units).
@@ -547,7 +558,6 @@ static void GLimp_InitExtensions( void )
 			qglGetCombinerOutputParameterivNV = (PFNGLGETCOMBINEROUTPUTPARAMETERIVNVPROC)ri.GL_GetProcAddress( "glGetCombinerOutputParameterivNV" );
 			qglGetFinalCombinerInputParameterfvNV = (PFNGLGETFINALCOMBINERINPUTPARAMETERFVNVPROC)ri.GL_GetProcAddress( "glGetFinalCombinerInputParameterfvNV" );
 			qglGetFinalCombinerInputParameterivNV = (PFNGLGETFINALCOMBINERINPUTPARAMETERIVNVPROC)ri.GL_GetProcAddress( "glGetFinalCombinerInputParameterivNV" );
-
 			// Validate the functions we need.
 			if ( !qglCombinerParameterfvNV || !qglCombinerParameterivNV || !qglCombinerParameterfNV || !qglCombinerParameteriNV || !qglCombinerInputNV ||
 				 !qglCombinerOutputNV || !qglFinalCombinerInputNV || !qglGetCombinerInputParameterfvNV || !qglGetCombinerInputParameterivNV ||
@@ -566,6 +576,7 @@ static void GLimp_InitExtensions( void )
 		}
 	}
 	else
+#endif
 	{
 		bNVRegisterCombiners = false;
 		Com_Printf ("...GL_NV_register_combiners not found\n" );
@@ -602,6 +613,27 @@ static void GLimp_InitExtensions( void )
 	// If we support one or the other, load the shared function pointers.
 	if ( bARBVertexProgram || bARBFragmentProgram )
 	{
+#ifdef __GAMEKID__
+		qglProgramStringARB = glProgramStringARB;
+		qglBindProgramARB = glBindProgramARB;
+		qglDeleteProgramsARB = glDeleteProgramsARB;
+		qglGenProgramsARB = glGenProgramsARB;
+		qglProgramEnvParameter4dARB = glProgramEnvParameter4dARB;
+		qglProgramEnvParameter4dvARB = glProgramEnvParameter4dvARB;
+		qglProgramEnvParameter4fARB = glProgramEnvParameter4fARB;
+		qglProgramEnvParameter4fvARB = glProgramEnvParameter4fvARB;
+		qglProgramLocalParameter4dARB = glProgramLocalParameter4dARB;
+		qglProgramLocalParameter4dvARB = glProgramLocalParameter4dvARB;
+		qglProgramLocalParameter4fARB = glProgramLocalParameter4fARB;
+		qglProgramLocalParameter4fvARB = glProgramLocalParameter4fvARB;
+		qglGetProgramEnvParameterdvARB = glGetProgramEnvParameterdvARB;
+		qglGetProgramEnvParameterfvARB = glGetProgramEnvParameterfvARB;
+		qglGetProgramLocalParameterdvARB = glGetProgramLocalParameterdvARB;
+		qglGetProgramLocalParameterfvARB = glGetProgramLocalParameterfvARB;
+		qglGetProgramivARB = glGetProgramivARB;
+		qglGetProgramStringARB = glGetProgramStringARB;
+		qglIsProgramARB = glIsProgramARB;
+#else
 		qglProgramStringARB					= (PFNGLPROGRAMSTRINGARBPROC)  ri.GL_GetProcAddress("glProgramStringARB");
 		qglBindProgramARB					= (PFNGLBINDPROGRAMARBPROC)    ri.GL_GetProcAddress("glBindProgramARB");
 		qglDeleteProgramsARB				= (PFNGLDELETEPROGRAMSARBPROC) ri.GL_GetProcAddress("glDeleteProgramsARB");
@@ -621,7 +653,7 @@ static void GLimp_InitExtensions( void )
 		qglGetProgramivARB					= (PFNGLGETPROGRAMIVARBPROC)     ri.GL_GetProcAddress("glGetProgramivARB");
 		qglGetProgramStringARB				= (PFNGLGETPROGRAMSTRINGARBPROC) ri.GL_GetProcAddress("glGetProgramStringARB");
 		qglIsProgramARB						= (PFNGLISPROGRAMARBPROC)        ri.GL_GetProcAddress("glIsProgramARB");
-
+#endif
 		// Validate the functions we need.
 		if ( !qglProgramStringARB || !qglBindProgramARB || !qglDeleteProgramsARB || !qglGenProgramsARB ||
 			 !qglProgramEnvParameter4dARB || !qglProgramEnvParameter4dvARB || !qglProgramEnvParameter4fARB ||
@@ -674,7 +706,11 @@ static void GLimp_InitExtensions( void )
 	}
 
 #if !defined(__APPLE__)
+#ifdef __GAMEKID__
+	qglStencilOpSeparate = glStencilOpSeparate;
+#else
 	qglStencilOpSeparate = (PFNGLSTENCILOPSEPARATEPROC)ri.GL_GetProcAddress("glStencilOpSeparate");
+#endif
 	if (qglStencilOpSeparate)
 	{
 		glConfig.doStencilShadowsInOneDrawcall = qtrue;
