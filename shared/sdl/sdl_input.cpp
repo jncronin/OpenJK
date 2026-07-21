@@ -439,9 +439,11 @@ static void IN_ActivateMouse( void )
 	if (!mouseAvailable || !SDL_WasInit( SDL_INIT_VIDEO ) )
 		return;
 
+	SDL_SetRelativeMouseMode( SDL_FALSE );
+
 	if( !mouseActive )
 	{
-		SDL_SetRelativeMouseMode( SDL_TRUE );
+		//SDL_SetRelativeMouseMode( SDL_TRUE );
 		SDL_SetWindowGrab( SDL_window, SDL_TRUE );
 
 		IN_GobbleMotionEvents( );
@@ -456,7 +458,7 @@ static void IN_ActivateMouse( void )
 				SDL_SetRelativeMouseMode( SDL_FALSE );
 				SDL_SetWindowGrab( SDL_window, SDL_FALSE );
 			} else {
-				SDL_SetRelativeMouseMode( SDL_TRUE );
+				//SDL_SetRelativeMouseMode( SDL_TRUE );
 				SDL_SetWindowGrab( SDL_window, SDL_TRUE );
 			}
 
@@ -878,7 +880,7 @@ static void IN_ProcessEvents( void )
 				{
 					if ( !e.motion.xrel && !e.motion.yrel )
 						break;
-					Sys_QueEvent( 0, SE_MOUSE, e.motion.xrel, e.motion.yrel, 0, NULL );
+					Sys_QueEvent( 0, SE_MOUSE, e.motion.x, e.motion.y, 0, NULL );
 				}
 				break;
 

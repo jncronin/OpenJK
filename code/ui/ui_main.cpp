@@ -4008,7 +4008,7 @@ UI_MouseEvent
 void _UI_MouseEvent( int dx, int dy )
 {
 	// update mouse screen position
-	uiInfo.uiDC.cursorx += dx;
+	uiInfo.uiDC.cursorx = dx;
 	if (uiInfo.uiDC.cursorx < 0)
 	{
 		uiInfo.uiDC.cursorx = 0;
@@ -4018,7 +4018,7 @@ void _UI_MouseEvent( int dx, int dy )
 		uiInfo.uiDC.cursorx = SCREEN_WIDTH;
 	}
 
-	uiInfo.uiDC.cursory += dy;
+	uiInfo.uiDC.cursory = dy;
 	if (uiInfo.uiDC.cursory < 0)
 	{
 		uiInfo.uiDC.cursory = 0;

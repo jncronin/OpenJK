@@ -445,9 +445,12 @@ void _UI_MouseEvent( int dx, int dy );
 CL_MouseEvent
 =================
 */
+
+extern glconfig_t glConfig;
+
 void CL_MouseEvent( int dx, int dy, int time ) {
 	if ( Key_GetCatcher( ) & KEYCATCH_UI ) {
-		_UI_MouseEvent( dx, dy );
+		_UI_MouseEvent( (dx * SCREEN_WIDTH) / glConfig.vidWidth, (dy * SCREEN_HEIGHT) / glConfig.vidHeight );
 	}
 	else {
 		cl.mouseDx[cl.mouseIndex] += dx;
