@@ -116,7 +116,7 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
     #define DLL_EXT ".dylib"
 
 // Linux
-#elif defined(__linux__) || defined(__FreeBSD_kernel__)
+#elif defined(__linux__) || defined(__FreeBSD_kernel__) || defined(__GAMEKID__)
 
 	#include <endian.h>
 

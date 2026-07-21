@@ -45,6 +45,10 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 #	if defined(__FX__)
 #		include <GL/fxmesa.h>
 #	endif
+#elif defined (__GAMEKID__)
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <GL/glext.h>
 #else
 #	include <gl.h>
 #endif
