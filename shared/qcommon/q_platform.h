@@ -122,6 +122,8 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 
 	#if defined(__linux__)
 		#define OS_STRING "linux"
+	#elif defined(__GAMEKID__)
+		#define OS_STRING "gkos"
 	#else
 		#define OS_STRING "kFreeBSD"
 	#endif
