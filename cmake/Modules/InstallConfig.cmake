@@ -45,7 +45,8 @@ set(CPACK_COMPONENTS_ALL
 	${JKAMPCoreComponent}
 	${JKAMPClientComponent}
 	${JKAMPServerComponent}
-	${JKASPClientComponent})
+	${JKASPClientComponent}
+	${JK2SPClientComponent})
 
 set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 
