@@ -178,7 +178,7 @@ extern cvar_t	*sv_mapname;
 extern cvar_t	*sv_mapChecksum;
 extern cvar_t	*se_language;			// JKA
 #ifdef JK2_MODE
-cvar_t	*sp_language;			// JK2
+extern cvar_t	*sp_language;			// JK2
 #endif
 extern cvar_t	*com_buildScript;
 
