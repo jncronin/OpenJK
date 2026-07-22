@@ -26,7 +26,6 @@ along with this program; if not, see <http://www.gnu.org/licenses/>.
 // moved it from the original header file for PCH reasons...
 //
 
-#ifdef MAIN_EXEC
 stringID_table_t animTable [MAX_ANIMATIONS+1] =
 {
 	//=================================================
@@ -1813,6 +1812,3 @@ stringID_table_t animTable [MAX_ANIMATIONS+1] =
 	//must be terminated
 	{ NULL,-1 }
 };
-#else
-extern stringID_table_t animTable [MAX_ANIMATIONS+1];
-#endif

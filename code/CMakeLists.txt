@@ -451,7 +451,9 @@ if(BuildSPEngine OR BuildJK2SPEngine)
 			target_link_libraries(${ProjectName} ${JK2SPVanillaRenderer} ${JK2SPGame})
 		endif()
 		target_link_options(${ProjectName} PRIVATE -no-pie)
-		target_compile_definitions(${ProjectName} PRIVATE MAIN_EXEC=1)
+		target_compile_definitions(${ProjectName} PRIVATE
+			MAIN_EXEC=1
+			animTable=MAIN_animTable)
 	endfunction(add_sp_project)
 	if(BuildSPEngine)
 		add_sp_project(${SPEngine} "SP Client" ${SPDir} ${JKAInstallDir} ${JKASPClientComponent})
