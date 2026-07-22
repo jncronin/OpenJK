@@ -440,6 +440,7 @@ static void IN_ActivateMouse( void )
 		return;
 
 	SDL_SetRelativeMouseMode( SDL_FALSE );
+	SDL_ShowCursor( SDL_FALSE );
 
 	if( !mouseActive )
 	{
