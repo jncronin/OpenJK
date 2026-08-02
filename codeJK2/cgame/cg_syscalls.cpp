@@ -30,7 +30,7 @@ extern void CG_PreInit();
 
 static intptr_t (QDECL *Q_syscall)( intptr_t arg, ... ) = (intptr_t (QDECL *)( intptr_t, ...))-1;
 
-extern "C" Q_EXPORT void QDECL gdllEntry( intptr_t (QDECL  *syscallptr)( intptr_t arg, ... ) ) {
+extern "C" Q_EXPORT void QDECL dllEntry( intptr_t (QDECL  *syscallptr)( intptr_t arg, ... ) ) {
 	Q_syscall = syscallptr;
 	CG_PreInit();
 }
@@ -418,11 +418,16 @@ void	cgi_R_WorldEffectCommand( const char *command )
 }
 
 // this returns a handle.  arg0 is the name in the format "idlogo.roq", set arg1 to NULL, alteredstates to qfalse (do not alter gamestate)
-int trap_CIN_PlayCinematic( const char *arg0, int xpos, int ypos, int width, int height, int bits, const char *psAudioFile /* = NULL */);
+int trap_CIN_PlayCinematic( const char *arg0, int xpos, int ypos, int width, int height, int bits, const char *psAudioFile /* = NULL */) {
+  return Q_syscall(CG_CIN_PLAYCINEMATIC, arg0, xpos, ypos, width, height, bits, psAudioFile);
+}
 
 // stops playing the cinematic and ends it.  should always return FMV_EOF
 // cinematics must be stopped in reverse order of when they are started
-e_status trap_CIN_StopCinematic(int handle);
+e_status trap_CIN_StopCinematic(int handle) {
+  return (e_status) Q_syscall(CG_CIN_STOPCINEMATIC, handle);
+}
+
 
 // will run a frame of the cinematic but will not draw it.  Will return FMV_EOF if the end of the cinematic has been reached.
 e_status trap_CIN_RunCinematic (int handle) {

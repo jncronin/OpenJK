@@ -839,7 +839,16 @@ Com_Error
 -------------------------
 */
 
-void Com_Error ( int level, const char *error, ... );
+void Com_Error ( int level, const char *error, ... ) {
+	va_list		argptr;
+	char		text[1024];
+
+	va_start (argptr, error);
+	Q_vsnprintf (text, sizeof(text), error, argptr);
+	va_end (argptr);
+
+	gi.Error( level, "%s", text);
+}
 
 /*
 -------------------------
@@ -847,7 +856,16 @@ Com_Printf
 -------------------------
 */
 
-void Com_Printf( const char *msg, ... );
+void Com_Printf( const char *msg, ... ) {
+	va_list		argptr;
+	char		text[1024];
+
+	va_start (argptr, msg);
+	Q_vsnprintf (text, sizeof(text), msg, argptr);
+	va_end (argptr);
+
+	gi.Printf ("%s", text);
+}
 
 /*
 ========================================================================
