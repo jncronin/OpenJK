@@ -448,9 +448,9 @@ if(BuildSPEngine OR BuildJK2SPEngine)
 			target_link_libraries(${ProjectName} ${SPRDVanillaRenderer} ${SPGame})
 		endif()
 		if(${ProjectName} STREQUAL ${JK2SPEngine})
-			target_link_libraries(${ProjectName} ${JK2SPVanillaRenderer} ${JK2SPGame})
+			target_link_libraries(${ProjectName} ${JK2SPVanillaRenderer})
 		endif()
-		target_link_options(${ProjectName} PRIVATE -no-pie)
+		#target_link_options(${ProjectName} PRIVATE -no-pie)
 		target_compile_definitions(${ProjectName} PRIVATE
 			MAIN_EXEC=1
 			animTable=MAIN_animTable)
