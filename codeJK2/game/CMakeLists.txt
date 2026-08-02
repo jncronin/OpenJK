@@ -285,7 +285,7 @@ if(WIN32)
 endif(WIN32)
 
 add_library(${JK2SPGame} SHARED ${JK2SPGameFiles})
-target_link_options(${JK2SPGame} PRIVATE -Wl,-z,notext -Wl,-Bsymbolic)
+target_link_options(${JK2SPGame} PRIVATE -Wl,-z,notext -Wl,-Bsymbolic -Wl,--exclude-libs,libstdc++.a)
 
 if(NOT MSVC)
 	# remove "lib" prefix for .so/.dylib files
