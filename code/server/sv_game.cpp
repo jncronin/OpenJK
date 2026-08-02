@@ -878,8 +878,6 @@ static bool SV_WE_SetTempGlobalFogColor( vec3_t color )
 	return re.SetTempGlobalFogColor( color );
 }
 
-extern "C" void *GetGameAPI(void *);
-
 /*
 ===============
 SV_InitGameProgs
@@ -1055,6 +1053,11 @@ void SV_InitGameProgs (void) {
 #else
 	const char *gamename = "jagame";
 #endif
+
+	GetGameAPIProc *GetGameAPI;
+	gameLibrary = Sys_LoadSPGameDll( gamename, &GetGameAPI );
+	if ( !gameLibrary )
+		Com_Error( ERR_DROP, "Failed to load %s library", gamename );
 
 	ge = (game_export_t *)GetGameAPI( &import );
 	if (!ge)

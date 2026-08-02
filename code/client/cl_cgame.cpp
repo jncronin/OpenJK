@@ -58,20 +58,17 @@ extern qboolean R_inPVS( vec3_t p1, vec3_t p2 );
 
 void UI_SetActiveMenu( const char* menuname,const char *menuID );
 
-extern "C" Q_EXPORT intptr_t QDECL g_vmMain( int command, intptr_t arg0, intptr_t arg1, intptr_t arg2, intptr_t arg3, intptr_t arg4, intptr_t arg5, intptr_t arg6, intptr_t arg7  );
-extern "C" Q_EXPORT void QDECL gdllEntry( intptr_t (QDECL  *syscallptr)( intptr_t arg, ... ) );
-
 qboolean CL_InitCGameVM( void *gameLibrary )
 {
 	typedef intptr_t SyscallProc( intptr_t, ... );
 	typedef void DllEntryProc( SyscallProc * );
 
-	DllEntryProc *dllEntry = gdllEntry;
+	DllEntryProc *dllEntry = (DllEntryProc *)Sys_LoadFunction( gameLibrary, "dllEntry" );
 
 	// NOTE: arm64 mac has a different calling convention for fixed parameters vs. variadic parameters.
 	//       As the cgame entryPoints (vmMain) in jk2 and jka use fixed arg0 to arg7 we can't use "..." around here or we end up with undefined behavior.
 	//       See: https://developer.apple.com/documentation/apple-silicon/addressing-architectural-differences-in-your-macos-code
-	cgvm.entryPoint = g_vmMain;
+	cgvm.entryPoint = (intptr_t (*)(int,intptr_t,intptr_t,intptr_t,intptr_t,intptr_t,intptr_t,intptr_t,intptr_t))Sys_LoadFunction( gameLibrary, "vmMain" );
 
 	if ( !cgvm.entryPoint || !dllEntry ) {
 #ifdef JK2_MODE
