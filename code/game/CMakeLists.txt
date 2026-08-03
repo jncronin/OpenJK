@@ -374,6 +374,8 @@ if(WIN32)
 endif(WIN32)
 
 add_library(${SPGame} SHARED ${SPGameFiles})
+target_link_options(${SPGame} PRIVATE -Wl,-z,notext -Wl,-Bsymbolic -Wl,--exclude-libs,libstdc++.a)
+
 
 # Hide symbols not explicitly marked public.
 set_property(TARGET ${SPGame} APPEND PROPERTY COMPILE_OPTIONS ${OPENJK_VISIBILITY_FLAGS})

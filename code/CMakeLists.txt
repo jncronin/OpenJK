@@ -445,7 +445,7 @@ if(BuildSPEngine OR BuildJK2SPEngine)
 		endif(SPEngineLibraries)
 
 		if(${ProjectName} STREQUAL ${SPEngine})
-			target_link_libraries(${ProjectName} ${SPRDVanillaRenderer} ${SPGame})
+			target_link_libraries(${ProjectName} ${SPRDVanillaRenderer})
 		endif()
 		if(${ProjectName} STREQUAL ${JK2SPEngine})
 			target_link_libraries(${ProjectName} ${JK2SPVanillaRenderer})
